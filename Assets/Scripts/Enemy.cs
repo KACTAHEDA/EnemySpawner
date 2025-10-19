@@ -1,4 +1,4 @@
-
+using System;
 using UnityEngine;
 
 public class Enemy : MonoBehaviour
@@ -7,19 +7,9 @@ public class Enemy : MonoBehaviour
 
     private float _maxLifeTime = 15f;
     private float _lifetime;
+    private Vector3 _moveDirection;
 
-    private System.Action<Enemy> _onLifeEnd;
-
-    public void Init(Vector3 position, Quaternion rotation)
-    {
-        transform.position = position;
-        transform.rotation = rotation;
-    }
-
-    public void InitCollback(System.Action<Enemy> onLifeEnd)
-    {
-        _onLifeEnd = onLifeEnd;
-    }
+    public event Action<Enemy> OnLifeEnd;
 
     private void OnEnable()
     {
@@ -30,9 +20,9 @@ public class Enemy : MonoBehaviour
     {
         _lifetime -= Time.deltaTime;
 
-        if(_lifetime <= 0f)
+        if (_lifetime <= 0f)
         {
-            _onLifeEnd?.Invoke(this);
+            OnLifeEnd?.Invoke(this);
         }
         else
         {
@@ -40,8 +30,15 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    public void Init(Vector3 position, Vector3 moveDirection)
+    {
+        transform.position = position;
+        _moveDirection = moveDirection;
+        transform.forward = _moveDirection;
+    }
+
     private void Move()
     {
-        transform.position += transform.forward * _speed * Time.deltaTime ;
+        transform.position += _moveDirection * _speed * Time.deltaTime ;
     }
 }

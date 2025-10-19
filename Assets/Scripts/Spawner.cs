@@ -1,24 +1,35 @@
 
 using System.Collections.Generic;
+using System.Collections;
+using UnityEngine.Pool;
 using UnityEngine;
 
 public class Spawner : MonoBehaviour
 {
-    [SerializeField] private Pool _pool;
+    [SerializeField] private Enemy _enemyPrefab;
     [SerializeField] private List<SpawnPoint> _points;
     [SerializeField] private float _interval = 2f;
+    [SerializeField] private int _poolCapacity = 50;
+    [SerializeField] private int _maxPoolSize = 100;
+    private Vector3 _moveDirection;
 
-    private float _timer;
+    private ObjectPool<Enemy> _pool;
 
-    private void Update()
+    private void Awake()
     {
-        _timer += Time.deltaTime;
+        _pool = new ObjectPool<Enemy>(
+            createFunc: () => Instantiate(_enemyPrefab),
+            actionOnGet: (enemy) => enemy.gameObject.SetActive(true),
+            actionOnRelease: (enemy) => enemy.gameObject.SetActive(false),
+            actionOnDestroy: (enemy) => Destroy(enemy.gameObject),
+            collectionCheck: true,
+            defaultCapacity: _poolCapacity,
+            maxSize: _maxPoolSize);
+    }
 
-        if(_timer >= _interval)
-        {
-            CreateEnemy();
-            _timer = 0f;
-        }
+    private void Start()
+    {
+        StartCoroutine(Loop());
     }
 
     private void CreateEnemy()
@@ -27,9 +38,25 @@ public class Spawner : MonoBehaviour
         var point = _points[randomPointIndex];
 
         Vector3 position = point.transform.position;
-        Quaternion rotation = point.transform.rotation;
+        _moveDirection = point.transform.forward;
 
-        Enemy enemy = _pool.GetEnemy();
-        enemy.Init(position, rotation);
+        Enemy enemy = _pool.Get();
+        enemy.Init(position, _moveDirection);
+        enemy.OnLifeEnd += EnemyIsDead;
+    }
+
+    private void EnemyIsDead(Enemy enemy)
+    {
+        enemy.OnLifeEnd -= EnemyIsDead;
+        _pool.Release(enemy);
+    }
+
+    private IEnumerator Loop()
+    {
+        while (true)
+        {
+            CreateEnemy();
+            yield return new WaitForSeconds(_interval);
+        }
     }
 }
