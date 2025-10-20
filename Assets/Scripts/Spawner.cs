@@ -29,10 +29,10 @@ public class Spawner : MonoBehaviour
 
     private void Start()
     {
-        StartCoroutine(Loop());
+        StartCoroutine(SpawnCoroutine());
     }
 
-    private void CreateEnemy()
+    private void SpawnEnemy()
     {
         int randomPointIndex = Random.Range(0, _points.Count);
         var point = _points[randomPointIndex];
@@ -51,12 +51,14 @@ public class Spawner : MonoBehaviour
         _pool.Release(enemy);
     }
 
-    private IEnumerator Loop()
+    private IEnumerator SpawnCoroutine()
     {
-        while (true)
+        var delay = new WaitForSeconds(_interval);
+
+        while (gameObject.activeInHierarchy)
         {
-            CreateEnemy();
-            yield return new WaitForSeconds(_interval);
+            SpawnEnemy();
+            yield return delay;
         }
     }
 }
